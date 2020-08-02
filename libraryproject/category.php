@@ -12,6 +12,58 @@ include 'header.php';
 if (isset($_GET['sef'])) {
 
 
+	$findcategorycount=$db->prepare("SELECT * FROM category WHERE category_seourl=:seourl");
+	$findcategorycount->execute(array(
+		'seourl'=>$_GET['sef']
+	));
+
+	$getcategorycount=$findcategorycount->fetch(PDO::FETCH_ASSOC);
+
+
+
+	//$category_id çalışıyor
+	$category_id = $getcategorycount['category_id'];
+	
+
+
+	
+
+	$findproductcount=$db->prepare("SELECT * FROM product WHERE category_id=:id ORDER BY product_front DESC");
+	$findproductcount->execute(array(
+		'id' => $category_id
+	));
+
+	$totalcount_context=$findproductcount->rowCount();
+
+}else{
+
+
+	$findproductcount=$db->prepare("SELECT * FROM product ORDER BY product_front DESC");
+	$findproductcount->execute();
+
+
+	$totalcount_context=$findproductcount->rowCount();
+
+
+}
+
+
+$page_limit = 6;
+
+$pagecount = ceil($totalcount_context/$page_limit);
+
+if (isset($_GET['page_number'])) {
+	$page_number = $_GET['page_number'] - 1;
+	$pagestartindex = $page_number*$page_limit;
+	
+}else{
+	$pagestartindex = 0*$page_limit;
+}
+
+
+if (isset($_GET['sef'])) {
+
+
 	$findcategory=$db->prepare("SELECT * FROM category WHERE category_seourl=:seourl");
 	$findcategory->execute(array(
 		'seourl'=>$_GET['sef']
@@ -19,32 +71,22 @@ if (isset($_GET['sef'])) {
 
 	$getcategory=$findcategory->fetch(PDO::FETCH_ASSOC);
 
-
-
-	//$category_id çalışıyor
 	$category_id = $getcategory['category_id'];
-	
 
 
 	
-
-	$findproduct=$db->prepare("SELECT * FROM product WHERE category_id=:id ORDER BY product_front DESC");
+	$findproduct=$db->prepare("SELECT * FROM product WHERE category_id=:id ORDER BY product_front DESC LIMIT $pagestartindex,$page_limit");
 	$findproduct->execute(array(
 		'id' => $category_id
 	));
 
-	$count=$findproduct->rowCount();
-
-}else{
-
-
-	$findproduct=$db->prepare("SELECT * FROM product ORDER BY product_front DESC");
-	$findproduct->execute();
-
 }
+else{
 
 
-
+	$findproduct=$db->prepare("SELECT * FROM product ORDER BY product_front DESC LIMIT $pagestartindex,$page_limit");
+	$findproduct->execute();
+}
 
 
 ?>
@@ -66,6 +108,8 @@ if (isset($_GET['sef'])) {
 						foreach ($title as $key) {
 							echo ucfirst($key)." ";
 						}
+
+
 					}else{echo "All products";} ?>
 
 				</div>
@@ -82,7 +126,7 @@ if (isset($_GET['sef'])) {
 
 				<?php 
 
-				if (!isset($count) || $count==0) { ?>
+				if (isset($_GET['sef']) || $totalcount_context==0) { ?>
 
 					<br><br><br>
 
@@ -134,15 +178,42 @@ if (isset($_GET['sef'])) {
 					<?php  } ?>
 				</div>
 
+				<?php if($pagecount!=1){ ?>
+
+				<nav style="margin-left: 50%" aria-label="Page navigation example">
+					<ul class="pagination">
+
+						<?php for ($i=1; $i <= $pagecount; $i++) {  ?>
+
+							<!-- <li class="page-item"><a class="page-link" href="#">Previous</a></li> -->
+							<?php if(isset($_GET['sef'])){ ?>
+
+								<li class="page-item"><a class="page-link" href="category-<?=seo($getcategorycount['category_name'])?>?page_number=<?php echo $i ?>"><?php echo $i ?></a></li> 
+
+							<?php }else{ ?>
+
+								<li class="page-item"><a class="page-link" href="category?page_number=<?php echo $i ?>"><?php echo $i ?></a></li>
+
+							<?php } ?>
+							<!-- <li class="page-item"><a class="page-link" href="category.php?page_number=2">2</a></li> -->
+							<!-- <li class="page-item"><a class="page-link" href="#">3</a></li> -->
+							<!-- <li class="page-item"><a class="page-link" href="#">Next</a></li> -->
+
+						<?php } ?>
+					</ul>
+				</nav>
+
+			<?php } ?>
 
 
 
 
 
 
-				<!--Products-->
 
-				<!--pagination-->
+			<!--Products-->
+
+			<!--pagination-->
 				<!-- <ul class="pagination shop-pag">
 					<li><a href="#"><i class="fa fa-caret-left"></i></a></li>
 					<li><a href="#">1</a></li>
